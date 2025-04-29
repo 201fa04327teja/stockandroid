@@ -1,230 +1,223 @@
+<?php
+header("Access-Control-Allow-Origin: *");
+include 'db.php';
+date_default_timezone_set('Asia/Kolkata'); // Set timezone if needed
+
+function timeAgo($datetime) {
+    $timestamp = strtotime($datetime);
+    $difference = time() - $timestamp;
+
+    if ($difference < 60)
+        return 'Just now';
+    elseif ($difference < 3600)
+        return floor($difference / 60) . ' minutes ago';
+    elseif ($difference < 86400)
+        return floor($difference / 3600) . ' hours ago';
+    elseif ($difference < 604800)
+        return floor($difference / 86400) . ' days ago';
+    elseif ($difference < 2592000)
+        return floor($difference / 604800) . ' weeks ago';
+    elseif ($difference < 31536000)
+        return floor($difference / 2592000) . ' months ago';
+    else
+        return floor($difference / 31536000) . ' years ago';
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tutorials</title>
-  <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      background: #f9f9f9;
-      margin: 0;
-      padding: 10px;
+    <meta charset="UTF-8">
+    <title>Tutorials</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Your same styles above */
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+        h1 {
+            text-align: center;
+            color: #cc0000;
+            margin-bottom: 10px;
+        }
+        .search-filter {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"], select {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .tutorial {
+            background: #fff;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+        }
+        .tutorial iframe {
+            width: 100%;
+            height: 200px;
+            border: none;
+        }
+        .tutorial-content {
+            padding: 15px;
+        }
+        .tutorial-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #333;
+        }
+        .category-badge {
+            display: inline-block;
+            background-color: #cc0000;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+        .tutorial-description {
+            font-size: 14px;
+            color: #555;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+        .show-more {
+            color: #cc0000;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 5px;
+            display: inline-block;
+        }
+        .meta {
+            font-size: 12px;
+            color: #999;
+            margin-top: 8px;
+        }
+        .no-data {
+            text-align: center;
+            color: #cc0000;
+            margin-top: 30px;
+            font-size: 18px;
+        }
+    </style>
+
+    <script>
+    function searchAndFilterTutorials() {
+        var searchInput = document.getElementById("searchInput").value.toLowerCase();
+        var categoryFilter = document.getElementById("categoryFilter").value.toLowerCase();
+        var tutorials = document.getElementsByClassName("tutorial");
+
+        var anyVisible = false;
+        for (var i = 0; i < tutorials.length; i++) {
+            var title = tutorials[i].getElementsByClassName("tutorial-title")[0].innerText.toLowerCase();
+            var category = tutorials[i].getElementsByClassName("category-badge")[0].innerText.toLowerCase();
+
+            var matchesSearch = title.includes(searchInput);
+            var matchesCategory = (categoryFilter === "all" || category === categoryFilter);
+
+            if (matchesSearch && matchesCategory) {
+                tutorials[i].style.display = "";
+                anyVisible = true;
+            } else {
+                tutorials[i].style.display = "none";
+            }
+        }
+
+        document.getElementById("noDataMessage").style.display = anyVisible ? "none" : "block";
     }
 
-    .category-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      gap: 10px;
-    }
+    function toggleDescription(id) {
+        var desc = document.getElementById('desc-' + id);
+        var btn = document.getElementById('btn-' + id);
 
-    .category-buttons button {
-      padding: 8px 15px;
-      border: none;
-      border-radius: 20px;
-      background-color: #e0e0e0;
-      color: #333;
-      font-size: 14px;
-      cursor: pointer;
-      transition: background-color 0.3s;
+        if (desc.classList.contains('expanded')) {
+            desc.classList.remove('expanded');
+            desc.innerText = desc.getAttribute('data-short');
+            btn.innerText = 'Show More';
+        } else {
+            desc.classList.add('expanded');
+            desc.innerText = desc.getAttribute('data-full');
+            btn.innerText = 'Show Less';
+        }
     }
-
-    .category-buttons button.active,
-    .category-buttons button:hover {
-      background-color: #ff0000;
-      color: #fff;
-    }
-
-    .search-bar {
-      margin-bottom: 20px;
-    }
-
-    .search-bar input {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-
-    .tutorial-card {
-      background: white;
-      border-radius: 12px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      overflow: hidden;
-    }
-
-    .tutorial-card iframe {
-      width: 100%;
-      height: 200px;
-      border: none;
-    }
-
-    .tutorial-content {
-      padding: 15px;
-    }
-
-    .tutorial-title {
-      font-size: 18px;
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
-
-    .tutorial-meta {
-      font-size: 12px;
-      color: #777;
-      margin-bottom: 10px;
-    }
-
-    .description {
-      font-size: 14px;
-      color: #444;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .toggle-button {
-      color: #1e88e5;
-      font-weight: bold;
-      cursor: pointer;
-      margin-left: 5px;
-    }
-  </style>
+    </script>
 </head>
 <body>
 
-  <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="Search by Title..." onkeyup="filterTutorials()">
-  </div>
+<h1>RodFaculty Tutorials</h1>
 
-  <div class="category-buttons" id="categoryButtons">
-    <button class="active" onclick="filterByCategory('All')">All</button>
-  </div>
+<div class="search-filter">
+    <input type="text" id="searchInput" onkeyup="searchAndFilterTutorials()" placeholder="Search tutorials...">
+    <select id="categoryFilter" onchange="searchAndFilterTutorials()">
+        <option value="all">All Categories</option>
+        <?php
+        $categoryQuery = "SELECT DISTINCT category FROM tutorials";
+        $categoryResult = $conn->query($categoryQuery);
+        if ($categoryResult->num_rows > 0) {
+            while ($cat = $categoryResult->fetch_assoc()) {
+                echo '<option value="' . htmlspecialchars($cat['category']) . '">' . htmlspecialchars($cat['category']) . '</option>';
+            }
+        }
+        ?>
+    </select>
+</div>
 
-  <div id="tutorials"></div>
-
-  <script>
-    let tutorialsData = [];
-
-    function fetchTutorials() {
-      fetch('https://stockandroid.onrender.com/get_tutorials.php') 
-        .then(response => response.json())
-        .then(data => {
-          if (data.status === 'success') {
-            tutorialsData = data.data;
-            createCategoryButtons();
-            displayTutorials(tutorialsData);
-          }
-        });
+<div id="tutorialsList">
+    <?php
+    function getYoutubeEmbedUrl($url) {
+        preg_match('/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([^\&\?\/]+)/', $url, $matches);
+        return isset($matches[1]) ? 'https://www.youtube.com/embed/' . $matches[1] : '';
     }
 
-    function createCategoryButtons() {
-      const categories = ['All', ...new Set(tutorialsData.map(t => t.category))];
-      const categoryContainer = document.getElementById('categoryButtons');
-      categoryContainer.innerHTML = '';
+    if ($_SERVER["REQUEST_METHOD"] === "GET") {
+        $query = "SELECT * FROM tutorials ORDER BY id DESC";
+        $result = $conn->query($query);
 
-      categories.forEach(cat => {
-        const btn = document.createElement('button');
-        btn.textContent = cat;
-        btn.onclick = () => filterByCategory(cat);
-        if (cat === 'All') btn.classList.add('active');
-        categoryContainer.appendChild(btn);
-      });
+        if ($result->num_rows > 0) {
+            $id = 0;
+            while ($row = $result->fetch_assoc()) {
+                $embedUrl = getYoutubeEmbedUrl($row['video_link']);
+                $description = htmlspecialchars($row['description']);
+                $shortDescription = strlen($description) > 100 ? substr($description, 0, 100) . '...' : $description;
+
+                echo '<div class="tutorial">';
+                if (!empty($embedUrl)) {
+                    echo '<iframe src="' . htmlspecialchars($embedUrl) . '" allowfullscreen></iframe>';
+                }
+                echo '<div class="tutorial-content">';
+                echo '<div class="category-badge">' . htmlspecialchars($row['category']) . '</div>';
+                echo '<div class="tutorial-title">' . htmlspecialchars($row['title']) . '</div>';
+                echo '<div class="tutorial-description" id="desc-' . $id . '" data-short="' . $shortDescription . '" data-full="' . $description . '">' . $shortDescription . '</div>';
+                if (strlen($description) > 100) {
+                    echo '<div class="show-more" id="btn-' . $id . '" onclick="toggleDescription(' . $id . ')">Show More</div>';
+                }
+                echo '<div class="meta">Posted ' . timeAgo($row['created_at']) . '</div>';
+                echo '</div></div>';
+
+                $id++;
+            }
+        } else {
+            echo '<div class="no-data">No tutorials found</div>';
+        }
+        $conn->close();
     }
+    ?>
+</div>
 
-    function displayTutorials(tutorials) {
-      const container = document.getElementById('tutorials');
-      container.innerHTML = '';
-
-      tutorials.forEach(tutorial => {
-        const createdAt = new Date(tutorial.created_at);
-        const timeAgoText = timeAgo(createdAt);
-
-        const shortDescription = tutorial.description.length > 100
-          ? tutorial.description.substring(0, 100) + '...'
-          : tutorial.description;
-
-        const card = `
-          <div class="tutorial-card">
-            <iframe src="https://www.youtube.com/embed/${getYouTubeID(tutorial.video_link)}" allowfullscreen></iframe>
-            <div class="tutorial-content">
-              <div class="tutorial-title">${tutorial.title}</div>
-              <div class="tutorial-meta">${tutorial.category} • ${timeAgoText}</div>
-              <div class="description">
-                <span class="short-text">${shortDescription}</span>
-                <span class="full-text hidden">${tutorial.description}</span>
-                ${tutorial.description.length > 100 ? '<span class="toggle-button" onclick="toggleDescription(this)">Show More</span>' : ''}
-              </div>
-            </div>
-          </div>
-        `;
-        container.innerHTML += card;
-      });
-    }
-
-    function toggleDescription(btn) {
-      const description = btn.parentElement;
-      const shortText = description.querySelector('.short-text');
-      const fullText = description.querySelector('.full-text');
-
-      if (fullText.classList.contains('hidden')) {
-        fullText.classList.remove('hidden');
-        shortText.classList.add('hidden');
-        btn.textContent = 'Show Less';
-      } else {
-        fullText.classList.add('hidden');
-        shortText.classList.remove('hidden');
-        btn.textContent = 'Show More';
-      }
-    }
-
-    function filterTutorials() {
-      const search = document.getElementById('searchInput').value.toLowerCase();
-      const filtered = tutorialsData.filter(t => t.title.toLowerCase().includes(search));
-      displayTutorials(filtered);
-    }
-
-    function filterByCategory(category) {
-      document.querySelectorAll('.category-buttons button').forEach(btn => btn.classList.remove('active'));
-      event.target.classList.add('active');
-
-      if (category === 'All') {
-        displayTutorials(tutorialsData);
-      } else {
-        const filtered = tutorialsData.filter(t => t.category === category);
-        displayTutorials(filtered);
-      }
-    }
-
-    function getYouTubeID(url) {
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-      const match = url.match(regExp);
-      return (match && match[2].length === 11) ? match[2] : null;
-    }
-
-    function timeAgo(date) {
-      const now = new Date();
-      const seconds = Math.floor((now - date) / 1000);
-
-      let interval = Math.floor(seconds / 31536000);
-      if (interval >= 1) return interval + " year" + (interval > 1 ? "s" : "") + " ago";
-      interval = Math.floor(seconds / 2592000);
-      if (interval >= 1) return interval + " month" + (interval > 1 ? "s" : "") + " ago";
-      interval = Math.floor(seconds / 86400);
-      if (interval >= 1) return interval + " day" + (interval > 1 ? "s" : "") + " ago";
-      interval = Math.floor(seconds / 3600);
-      if (interval >= 1) return interval + " hour" + (interval > 1 ? "s" : "") + " ago";
-      interval = Math.floor(seconds / 60);
-      if (interval >= 1) return interval + " minute" + (interval > 1 ? "s" : "") + " ago";
-      return "Just now";
-    }
-
-    fetchTutorials();
-  </script>
+<div id="noDataMessage" class="no-data" style="display:none;">No matching tutorials found</div>
 
 </body>
 </html>
