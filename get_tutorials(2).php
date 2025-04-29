@@ -111,7 +111,7 @@
     let tutorialsData = [];
 
     function fetchTutorials() {
-      fetch('YOUR_PHP_FILE.php') // replace with your PHP file path
+      fetch('https://stockandroid.onrender.com/get_tutorials.php') 
         .then(response => response.json())
         .then(data => {
           if (data.status === 'success') {
