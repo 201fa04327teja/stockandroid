@@ -31,7 +31,6 @@ function timeAgo($datetime) {
     <title>Tutorials</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Your same styles above */
         body {
             font-family: 'Roboto', sans-serif;
             margin: 0;
@@ -157,7 +156,7 @@ function timeAgo($datetime) {
 </head>
 <body>
 
-<h1>RodFaculty Tutorials</h1>
+<h1>Tutorials</h1>
 
 <div class="search-filter">
     <input type="text" id="searchInput" onkeyup="searchAndFilterTutorials()" placeholder="Search tutorials...">
