@@ -1,8 +1,8 @@
 <?php
 $host = "sql.freedb.tech";
-$user = "freedb_rental";
-$pass = "tSY&Fb&63D9j9!N";
-$dbname = "freedb_rental";
+$user = "freedb namratha sree";
+$pass = "&vR8Fjb3rg72!dw";
+$dbname = "freedb_stock android app";
 $port = 3306; // Specify the port
 
 $conn = new mysqli($host, $user, $pass, $dbname, $port);
